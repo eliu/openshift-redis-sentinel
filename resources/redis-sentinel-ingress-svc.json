@@ -1,0 +1,21 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "redis-sentinel-ingress-1"
+    },
+    "spec": {
+        "ports": [
+            {
+                "protocol": "TCP",
+                "port": 26379,
+                "targetPort": 26379
+            }
+        ],
+        "selector": {
+            "redis-sentinel": "true"
+        },
+        "type": "LoadBalancer",
+        "sessionAffinity": "None"
+    }
+}

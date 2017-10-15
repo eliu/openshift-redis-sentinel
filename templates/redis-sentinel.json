@@ -1,0 +1,382 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "annotations": {
+            "description": "This template provides a distributed Redis Sentinel cluster. The data is stored on persistent storage. Note that when deployment is completed, the Redis Sentinel cluster is actually not fully up and running. You need to wait for a short while and attempt to login redis via cli by the ingress port exposed by service redis-sentinel-ingress.",
+            "iconClass": "icon-redis",
+            "openshift.io/display-name": "Redis Sentinel Cluster (Persistent)",
+            "tags": "database,redis",
+            "template.openshift.io/provider-display-name": "eliu"
+        },
+        "name": "redis-sentinel"
+    },
+    "objects": [
+        {
+            "kind": "ImageStream",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis-sentinel",
+                "generation": 2,
+                "creationTimestamp": null,
+                "annotations": {
+                    "openshift.io/image.insecureRepository": "true"
+                }
+            },
+            "spec": {
+                "lookupPolicy": {
+                    "local": false
+                },
+                "dockerImageRepository": "${REDIS_SENTINEL_IMAGE}:${REDIS_SENTINEL_TAG}",
+                "tags": [
+                    {
+                        "name": "latest",
+                        "annotations": null,
+                        "from": {
+                            "kind": "DockerImage",
+                            "name": "${REDIS_SENTINEL_IMAGE}:${REDIS_SENTINEL_TAG}"
+                        },
+                        "importPolicy": {
+                            "insecure": true
+                        },
+                        "referencePolicy": {
+                            "type": "Source"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "kind": "Pod",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis",
+                "labels": {
+                    "name": "redis",
+                    "redis-sentinel": "true",
+                    "role": "master"
+                },
+                "annotations": {
+                    "openshift.io/scc": "restricted",
+                    "template.alpha.openshift.io/wait-for-ready": "true"
+                }
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "data",
+                        "emptyDir": {}
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "redis",
+                        "image": "${REDIS_SENTINEL_IMAGE}:${REDIS_SENTINEL_TAG}",
+                        "ports": [
+                            {
+                                "containerPort": 6379,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "MASTER",
+                                "value": "true"
+                            }
+                        ],
+                        "resources": {
+                            "limits": {
+                                "cpu": "100m"
+                            },
+                            "requests": {
+                                "cpu": "100m"
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "data",
+                                "mountPath": "/redis-master-data"
+                            }
+                        ],
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "imagePullPolicy": "Always"
+                    },
+                    {
+                        "name": "sentinel",
+                        "image": "${REDIS_SENTINEL_IMAGE}:${REDIS_SENTINEL_TAG}",
+                        "ports": [
+                            {
+                                "containerPort": 26379,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "SENTINEL",
+                                "value": "true"
+                            }
+                        ],
+                        "resources": {},
+                        "volumeMounts": [
+                            {
+                                "name": "data",
+                                "mountPath": "/redis-sentinel-data"
+                            }
+                        ],
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "imagePullPolicy": "Always"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis",
+                "annotations": {
+                    "template.alpha.openshift.io/wait-for-ready": "true"
+                }
+            },
+            "spec": {
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "redis",
+                                "redis-sentinel"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "redis-sentinel:latest"
+                            }
+                        }
+                    }
+                ],
+                "replicas": 2,
+                "test": false,
+                "selector": {
+                    "name": "redis"
+                },
+                "template": {
+                    "metadata": {
+                        "creationTimestamp": null,
+                        "labels": {
+                            "name": "redis",
+                            "redis-sentinel": "true"
+                        }
+                    },
+                    "spec": {
+                        "volumes": [
+                            {
+                                "name": "redis-data",
+                                "persistentVolumeClaim": {
+                                    "claimName": "redis-pvc"
+                                }
+                            },
+                            {
+                                "name": "redis-sentinel-data",
+                                "persistentVolumeClaim": {
+                                    "claimName": "redis-sentinel-pvc"
+                                }
+                            }
+                        ],
+                        "containers": [
+                            {
+                                "name": "redis",
+                                "image": " ",
+                                "imagePullPolicy": "IfNotPresent",
+                                "ports": [
+                                    {
+                                        "containerPort": 6379,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "resources": {},
+                                "volumeMounts": [
+                                    {
+                                        "name": "redis-data",
+                                        "mountPath": "/redis-master-data"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "redis-sentinel",
+                                "image": " ",
+                                "imagePullPolicy": "IfNotPresent",
+                                "ports": [
+                                    {
+                                        "containerPort": 26379,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "env": [
+                                    {
+                                        "name": "SENTINEL",
+                                        "value": "true"
+                                    }
+                                ],
+                                "resources": {},
+                                "volumeMounts": [
+                                    {
+                                        "name": "redis-sentinel-data",
+                                        "mountPath": "/redis-sentinel-data"
+                                    }
+                                ]
+                            }
+                        ],
+                        "restartPolicy": "Always",
+                        "terminationGracePeriodSeconds": 30,
+                        "dnsPolicy": "ClusterFirst",
+                        "securityContext": {},
+                        "schedulerName": "default-scheduler"
+                    }
+                }
+            }
+        },
+        {
+            "kind": "Service",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis",
+                "creationTimestamp": null,
+                "labels": {
+                    "name": "redis",
+                    "role": "service"
+                }
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "protocol": "TCP",
+                        "port": 6379,
+                        "targetPort": 6379
+                    }
+                ],
+                "selector": {
+                    "name": "redis"
+                },
+                "type": "ClusterIP",
+                "sessionAffinity": "None"
+            },
+            "status": {
+                "loadBalancer": {}
+            }
+        },
+        {
+            "kind": "Service",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis-sentinel",
+                "creationTimestamp": null,
+                "labels": {
+                    "name": "sentinel",
+                    "role": "service"
+                }
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "sentinel",
+                        "protocol": "TCP",
+                        "port": 26379,
+                        "targetPort": 26379
+                    }
+                ],
+                "selector": {
+                    "redis-sentinel": "true"
+                },
+                "type": "ClusterIP",
+                "sessionAffinity": "None"
+            },
+            "status": {
+                "loadBalancer": {}
+            }
+        },
+        {
+            "kind": "Service",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis-sentinel-ingress"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "protocol": "TCP",
+                        "port": 26379,
+                        "targetPort": 26379
+                    }
+                ],
+                "selector": {
+                    "redis-sentinel": "true"
+                },
+                "type": "LoadBalancer",
+                "sessionAffinity": "None"
+            }
+        },
+        {
+            "kind": "PersistentVolumeClaim",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis-pvc"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteOnce"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "5Gi"
+                    }
+                }
+            },
+            "status": {}
+        },
+        {
+            "kind": "PersistentVolumeClaim",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "redis-sentinel-pvc"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteOnce"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "5Gi"
+                    }
+                }
+            },
+            "status": {}
+        }
+    ],
+    "parameters": [
+        {
+            "description": "Redis Sentinel docker image reference",
+            "displayName": "Redis Docker Image Ref",
+            "name": "REDIS_SENTINEL_IMAGE",
+            "required": true,
+            "value": "eliu/redis-sentinel"
+        },
+        {
+            "description": "Redis Sentinel docker image tag",
+            "displayName": "Redis Docker Image Tag",
+            "name": "REDIS_SENTINEL_TAG",
+            "required": true,
+            "value": "latest"
+        }
+    ]
+}

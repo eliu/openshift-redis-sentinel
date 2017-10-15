@@ -1,0 +1,13 @@
+{
+  "apiVersion": "v1",
+  "kind": "ImageStream",
+  "metadata": {
+    "name": "redis-sentinel",
+    "annotations": {
+        "openshift.io/image.insecureRepository": "true"
+    }
+  },
+  "spec": {
+    "dockerImageRepository": "eliu/redis-sentinel"
+  }
+}
