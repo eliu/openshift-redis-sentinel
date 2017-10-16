@@ -27,7 +27,7 @@
                 "lookupPolicy": {
                     "local": false
                 },
-                "dockerImageRepository": "${REDIS_SENTINEL_IMAGE}:${REDIS_SENTINEL_TAG}",
+                "dockerImageRepository": "${REDIS_SENTINEL_IMAGE}",
                 "tags": [
                     {
                         "name": "latest",
