@@ -27,11 +27,14 @@ $ oc create -f templates/redis-sentinel-template.json
 ## Deploy Your App using Template
 
 1. Deploy Redis Sentinel app into your project
+
 ```bash
 $ oc login -u <username> -p <password> -n <your_project>
 $ oc process redis-sentinel | oc create -f -
 ```
+
 2. Get ingress port and test your redis sentinel
+
 ```bash
 # Get redis ingress port
 $ oc export svc redis-sentinel-ingress | grep 'nodePort'
