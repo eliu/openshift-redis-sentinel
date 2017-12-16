@@ -182,15 +182,11 @@
                         "volumes": [
                             {
                                 "name": "redis-data",
-                                "persistentVolumeClaim": {
-                                    "claimName": "redis-pvc"
-                                }
+                                "emptyDir": {}
                             },
                             {
                                 "name": "redis-sentinel-data",
-                                "persistentVolumeClaim": {
-                                    "claimName": "redis-sentinel-pvc"
-                                }
+                                "emptyDir": {}
                             }
                         ],
                         "containers": [
@@ -325,42 +321,6 @@
                 "type": "LoadBalancer",
                 "sessionAffinity": "None"
             }
-        },
-        {
-            "kind": "PersistentVolumeClaim",
-            "apiVersion": "v1",
-            "metadata": {
-                "name": "redis-pvc"
-            },
-            "spec": {
-                "accessModes": [
-                    "ReadWriteOnce"
-                ],
-                "resources": {
-                    "requests": {
-                        "storage": "5Gi"
-                    }
-                }
-            },
-            "status": {}
-        },
-        {
-            "kind": "PersistentVolumeClaim",
-            "apiVersion": "v1",
-            "metadata": {
-                "name": "redis-sentinel-pvc"
-            },
-            "spec": {
-                "accessModes": [
-                    "ReadWriteOnce"
-                ],
-                "resources": {
-                    "requests": {
-                        "storage": "5Gi"
-                    }
-                }
-            },
-            "status": {}
         }
     ],
     "parameters": [
