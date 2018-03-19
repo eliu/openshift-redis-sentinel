@@ -30,7 +30,7 @@ $ oc create -f templates/redis-sentinel-template.json
 
 ```bash
 $ oc login -u <username> -p <password> -n <your_project>
-$ oc process redis-sentinel | oc create -f -
+$ oc process openshift//redis-sentinel | oc create -f -
 ```
 
 2. Get ingress port and test your redis sentinel
